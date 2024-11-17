@@ -3,6 +3,8 @@ package main
 import (
 	"runtime"
 
+	"Window/mesh"
+
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
@@ -48,15 +50,20 @@ func main() {
 		panic(err)
 	}
 
-	triangleVert := []float32{-0.3, -0.5, 0.0,
+	var tri1 mesh.Mesh
+	var tri2 mesh.Mesh
+
+	tri1.Vertices = []float32{-0.3, -0.5, 0.0,
 		-0.2, 0.5, 0.0,
-		-0.1, -0.5, 0.0,
-		0.3, -0.5, 0.0,
+		-0.1, -0.5, 0.0}
+
+	tri1.Indicies = []uint32{0, 1, 2}
+
+	tri2.Vertices = []float32{0.3, -0.5, 0.0,
 		0.2, 0.5, 0.0,
 		0.1, -0.5, 0.0}
 
-	triangleInd := []uint32{0, 1, 2,
-		3, 4, 5}
+	tri2.Indicies = []uint32{0, 1, 2}
 
 	vertexShader := gl.CreateShader(gl.VERTEX_SHADER)
 	vertexShaderSourceRef, free := gl.Strs(vertexShaderSource)
@@ -76,27 +83,39 @@ func main() {
 	gl.AttachShader(shaderProgram, fragShader)
 	gl.LinkProgram(shaderProgram)
 
-	var VBO uint32
-	var VAO uint32
-	var EBO uint32
+	var VBO1 uint32
+	var VAO1 uint32
+	var EBO1 uint32
 
-	gl.GenVertexArrays(1, &VAO)
-	gl.GenBuffers(1, &VBO)
-	gl.GenBuffers(1, &EBO)
+	var VBO2 uint32
+	var VAO2 uint32
+	var EBO2 uint32
 
-	gl.BindVertexArray(VAO)
+	gl.GenVertexArrays(1, &VAO1)
+	gl.GenBuffers(1, &VBO1)
+	gl.GenBuffers(1, &EBO1)
 
-	gl.BindBuffer(gl.ARRAY_BUFFER, VBO)
-	gl.BufferData(gl.ARRAY_BUFFER, len(triangleVert)*4, gl.Ptr(triangleVert), gl.STATIC_DRAW)
+	gl.GenVertexArrays(1, &VAO2)
+	gl.GenBuffers(1, &VBO2)
+	gl.GenBuffers(1, &EBO2)
 
-	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO)
-	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(triangleInd)*4, gl.Ptr(triangleInd), gl.STATIC_DRAW)
+	gl.BindVertexArray(VAO1)
+	gl.BindBuffer(gl.ARRAY_BUFFER, VBO1)
+	gl.BufferData(gl.ARRAY_BUFFER, len(tri1.Vertices)*4, gl.Ptr(tri1.Vertices), gl.STATIC_DRAW)
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO1)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(tri1.Indicies)*4, gl.Ptr(tri1.Indicies), gl.STATIC_DRAW)
 
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
 	gl.EnableVertexAttribArray(0)
 
-	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
-	gl.BindVertexArray(VAO)
+	gl.BindVertexArray(VAO2)
+	gl.BindBuffer(gl.ARRAY_BUFFER, VBO2)
+	gl.BufferData(gl.ARRAY_BUFFER, len(tri2.Vertices)*4, gl.Ptr(tri2.Vertices), gl.STATIC_DRAW)
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO2)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(tri2.Indicies)*4, gl.Ptr(tri2.Indicies), gl.STATIC_DRAW)
+
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
+	gl.EnableVertexAttribArray(0)
 
 	wireframeMode = false
 
@@ -105,7 +124,6 @@ func main() {
 		ProcessInput(*window)
 
 		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
-		gl.Clear(gl.COLOR_BUFFER_BIT)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		if wireframeMode {
@@ -115,9 +133,14 @@ func main() {
 		}
 
 		gl.UseProgram(shaderProgram)
-		gl.BindVertexArray(VAO)
+		gl.BindVertexArray(VAO1)
+		gl.DrawElements(gl.TRIANGLES, int32(len(tri1.Indicies)), gl.UNSIGNED_INT, nil)
+		gl.BindVertexArray(0)
+
+		gl.BindVertexArray(VAO2)
 		//gl.DrawArrays(gl.TRIANGLES, 0, int32(len(triangleVert)))
-		gl.DrawElements(gl.TRIANGLES, int32(len(triangleInd)), gl.UNSIGNED_INT, nil)
+		gl.DrawElements(gl.TRIANGLES, int32(len(tri2.Indicies)), gl.UNSIGNED_INT, nil)
+		gl.BindVertexArray(0)
 
 		// Do OpenGL stuff.
 		window.SwapBuffers()
