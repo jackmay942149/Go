@@ -1,4 +1,4 @@
-module Window
+module Application
 
 go 1.23.3
 

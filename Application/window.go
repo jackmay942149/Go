@@ -1,16 +1,25 @@
 package main
 
 import (
+	"fmt"
 	"runtime"
 
-	"Window/mesh"
-	"Window/transform"
+	"Application/mesh"
+	"Application/shading"
+	"Application/transform"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
-var wireframeMode bool
+const (
+	WINDOWWIDTH  int32 = 800
+	WINDOWHEIGHT int32 = 600
+)
+
+var shadingModel shading.Model = shading.MakeModel(0)
+var mousePosx float64
+var mousePosy float64
 
 func init() {
 	// This is needed to arrange that main() runs on main thread.
@@ -39,7 +48,7 @@ func main() {
 	}
 	defer glfw.Terminate()
 
-	window, err := glfw.CreateWindow(800, 600, "Triangle", nil, nil)
+	window, err := glfw.CreateWindow(int(WINDOWWIDTH), int(WINDOWHEIGHT), "Triangle", nil, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -54,9 +63,9 @@ func main() {
 	var tri1 mesh.Mesh
 	var tri2 mesh.Mesh
 
-	tri1.Vertices = []float32{-0.3, -0.5, 0.0,
-		-0.2, 0.5, 0.0,
-		-0.1, -0.5, 0.0}
+	tri1.Vertices = []float32{-0.03, -0.05, 0.0,
+		-0.02, 0.05, 0.0,
+		-0.01, -0.05, 0.0}
 
 	tri1.Indicies = []uint32{0, 1, 2}
 	tri1.Transform = transform.MakeTransform()
@@ -120,16 +129,25 @@ func main() {
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
 	gl.EnableVertexAttribArray(0)
 
-	wireframeMode = false
-
 	for !window.ShouldClose() {
 		// Close window on escape press
 		ProcessInput(*window)
 
 		if window.GetKey(glfw.KeyD) == glfw.Press {
-			tri1.Transform.Position.X += 0.000001
+			tri1.Transform.Position.X += 0.001
 		} else if window.GetKey(glfw.KeyA) == glfw.Press {
-			tri1.Transform.Position.X -= 0.000001
+			tri1.Transform.Position.X -= 0.001
+		} else if window.GetKey(glfw.KeyW) == glfw.Press {
+			tri1.Transform.Position.Y += 0.001
+		} else if window.GetKey(glfw.KeyS) == glfw.Press {
+			tri1.Transform.Position.Y -= 0.001
+		}
+
+		if window.GetKey(glfw.KeyV) == glfw.Press {
+			mousePosx, mousePosy = window.GetCursorPos()
+			tri1.Transform.Position.X = 2*float32(mousePosx/float64(WINDOWWIDTH)) - 1
+			tri1.Transform.Position.Y = -2*float32(mousePosy/float64(WINDOWHEIGHT)) + 1
+			fmt.Println(mousePosx, mousePosy)
 		}
 
 		gl.BindVertexArray(VAO1)
@@ -144,7 +162,7 @@ func main() {
 		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-		if wireframeMode {
+		if shadingModel.Model == shading.WIREFRAME {
 			gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
 		} else {
 			gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
@@ -172,9 +190,9 @@ func ProcessInput(window glfw.Window) {
 		window.SetShouldClose(true)
 	}
 
-	if window.GetKey(glfw.KeyW) == glfw.Press {
-		wireframeMode = true
-	} else if window.GetKey(glfw.KeyL) == glfw.Press {
-		wireframeMode = false
+	if window.GetKey(glfw.Key1) == glfw.Press {
+		shadingModel.Model = shading.WIREFRAME
+	} else if window.GetKey(glfw.Key2) == glfw.Press {
+		shadingModel.Model = shading.UNLIT
 	}
 }
