@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"runtime"
 
+	"Application/input"
 	"Application/mesh"
 	"Application/shading"
 	"Application/transform"
@@ -54,6 +55,7 @@ func main() {
 	}
 
 	window.MakeContextCurrent()
+	input.AttachWindow(*window)
 
 	// Initialize Glow
 	if err := gl.Init(); err != nil {
@@ -63,12 +65,13 @@ func main() {
 	var tri1 mesh.Mesh
 	var tri2 mesh.Mesh
 
-	tri1.Vertices = []float32{-0.03, -0.05, 0.0,
-		-0.02, 0.05, 0.0,
-		-0.01, -0.05, 0.0}
+	tri1.Vertices = []float32{-0.03, -0.05, 0.0, // Left
+		0.0, 0.05, 0.0, // Top
+		0.03, -0.05, 0.0} // Right
 
 	tri1.Indicies = []uint32{0, 1, 2}
 	tri1.Transform = transform.MakeTransform()
+	tri1.TransformedVertices = tri1.Vertices
 
 	tri2.Vertices = []float32{0.3, -0.5, 0.0,
 		0.2, 0.5, 0.0,
@@ -76,6 +79,7 @@ func main() {
 
 	tri2.Indicies = []uint32{0, 1, 2}
 	tri2.Transform = transform.MakeTransform()
+	tri2.TransformedVertices = tri2.Vertices
 
 	vertexShader := gl.CreateShader(gl.VERTEX_SHADER)
 	vertexShaderSourceRef, free := gl.Strs(vertexShaderSource)
@@ -113,7 +117,7 @@ func main() {
 
 	gl.BindVertexArray(VAO1)
 	gl.BindBuffer(gl.ARRAY_BUFFER, VBO1)
-	gl.BufferData(gl.ARRAY_BUFFER, len(tri1.Vertices)*4, gl.Ptr(mesh.GetTransformedIndicies(tri1)), gl.STATIC_DRAW)
+	gl.BufferData(gl.ARRAY_BUFFER, len(tri1.Vertices)*4, gl.Ptr(mesh.GetTransformedIndicies(&tri1)), gl.STATIC_DRAW)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO1)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(tri1.Indicies)*4, gl.Ptr(tri1.Indicies), gl.STATIC_DRAW)
 
@@ -134,27 +138,40 @@ func main() {
 		ProcessInput(*window)
 
 		if window.GetKey(glfw.KeyD) == glfw.Press {
-			tri1.Transform.Position.X += 0.001
+			tri2.Transform.Position.X += 0.001
 		} else if window.GetKey(glfw.KeyA) == glfw.Press {
-			tri1.Transform.Position.X -= 0.001
+			tri2.Transform.Position.X -= 0.001
 		} else if window.GetKey(glfw.KeyW) == glfw.Press {
-			tri1.Transform.Position.Y += 0.001
+			tri2.Transform.Position.Y += 0.001
 		} else if window.GetKey(glfw.KeyS) == glfw.Press {
-			tri1.Transform.Position.Y -= 0.001
+			tri2.Transform.Position.Y -= 0.001
 		}
 
 		if window.GetKey(glfw.KeyV) == glfw.Press {
 			mousePosx, mousePosy = window.GetCursorPos()
-			tri1.Transform.Position.X = 2*float32(mousePosx/float64(WINDOWWIDTH)) - 1
-			tri1.Transform.Position.Y = -2*float32(mousePosy/float64(WINDOWHEIGHT)) + 1
-			fmt.Println(mousePosx, mousePosy)
+			var clickPos transform.Position
+			clickPos.X = 2*float32(mousePosx/float64(WINDOWWIDTH)) - 1
+			clickPos.Y = -2*float32(mousePosy/float64(WINDOWHEIGHT)) + 1
+			clickPos.Z = 1
+			fmt.Println("ClickPos = ", clickPos)
+			tri1.Transform.Position = mesh.GetClosestVertex(tri2, clickPos)
+			fmt.Println("Transform is {", tri1.Transform.Position.X, ", ", tri1.Transform.Position.Y, "}")
 		}
 
 		gl.BindVertexArray(VAO1)
 		gl.BindBuffer(gl.ARRAY_BUFFER, VBO1)
-		gl.BufferData(gl.ARRAY_BUFFER, len(tri1.Vertices)*4, gl.Ptr(mesh.GetTransformedIndicies(tri1)), gl.STATIC_DRAW)
+		gl.BufferData(gl.ARRAY_BUFFER, len(tri1.Vertices)*4, gl.Ptr(mesh.GetTransformedIndicies(&tri1)), gl.STATIC_DRAW)
 		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO1)
 		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(tri1.Indicies)*4, gl.Ptr(tri1.Indicies), gl.STATIC_DRAW)
+
+		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
+		gl.EnableVertexAttribArray(0)
+
+		gl.BindVertexArray(VAO2)
+		gl.BindBuffer(gl.ARRAY_BUFFER, VBO2)
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO2)
+		gl.BufferData(gl.ARRAY_BUFFER, len(tri2.Vertices)*4, gl.Ptr(mesh.GetTransformedIndicies(&tri2)), gl.STATIC_DRAW)
+		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(tri2.Indicies)*4, gl.Ptr(tri2.Indicies), gl.STATIC_DRAW)
 
 		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
 		gl.EnableVertexAttribArray(0)
@@ -185,14 +202,16 @@ func main() {
 }
 
 func ProcessInput(window glfw.Window) {
+	input.Refresh()
+
 	// Close window on escape press
-	if window.GetKey(glfw.KeyEscape) == glfw.Press {
+	if input.ESC.Released {
 		window.SetShouldClose(true)
 	}
 
-	if window.GetKey(glfw.Key1) == glfw.Press {
+	if input.KEY1.Pressed {
 		shadingModel.Model = shading.WIREFRAME
-	} else if window.GetKey(glfw.Key2) == glfw.Press {
+	} else if input.KEY2.Pressed {
 		shadingModel.Model = shading.UNLIT
 	}
 }
