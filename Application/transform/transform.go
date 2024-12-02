@@ -1,39 +1,17 @@
 package transform
 
+import (
+	"Application/vector"
+)
+
 type Transform struct {
-	Position Position
-	Rotation Rotation
-	Scale    Scale
+	Position vector.Vec3
+	Rotation vector.Vec3
+	Scale    vector.Vec3
 }
 
-type Position struct {
-	X float32
-	Y float32
-	Z float32
-}
-
-type Rotation struct {
-	Pitch float32
-	Yaw   float32
-	Roll  float32
-}
-
-type Scale struct {
-	X float32
-	Y float32
-	Z float32
-}
-
-func MakeTransform() Transform {
-	var newTransform Transform
-	newTransform.Position.X = 0
-	newTransform.Position.Y = 0
-	newTransform.Position.Z = 0
-	newTransform.Rotation.Pitch = 0
-	newTransform.Rotation.Yaw = 0
-	newTransform.Rotation.Roll = 0
-	newTransform.Scale.X = 1
-	newTransform.Scale.Y = 1
-	newTransform.Scale.Z = 1
-	return newTransform
+var DEFAULT Transform = Transform{
+	vector.Vec3{X: 0, Y: 0, Z: 0},
+	vector.Vec3{X: 0, Y: 0, Z: 0},
+	vector.Vec3{X: 1, Y: 1, Z: 1},
 }

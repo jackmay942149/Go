@@ -9,6 +9,7 @@ import (
 	"Application/shaders"
 	"Application/shading"
 	"Application/transform"
+	"Application/vector"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -50,23 +51,27 @@ func main() {
 	}
 
 	var tri1 mesh.Mesh
-	var tri2 mesh.Mesh
-
-	tri1.Vertices = []float32{-0.03, -0.05, 0.0, // Left
-		0.0, 0.05, 0.0, // Top
-		0.03, -0.05, 0.0} // Right
+	tri1.Vertices = []vector.Vec3{
+		{X: -0.03, Y: -0.05, Z: 0.0},
+		{X: 0.0, Y: 0.05, Z: 0.0},
+		{X: 0.03, Y: -0.05, Z: 0.0},
+	}
 
 	tri1.Indicies = []uint32{0, 1, 2}
-	tri1.Transform = transform.MakeTransform()
-	tri1.TransformedVertices = tri1.Vertices
+	tri1.Transform = transform.DEFAULT
+	tri1.TransformedVertices = mesh.GetTransformedIndicies(&tri1)
 
-	tri2.Vertices = []float32{0.3, -0.5, 0.0,
-		0.2, 0.5, 0.0,
-		0.1, -0.5, 0.0}
+	var tri2 mesh.Mesh
+
+	tri2.Vertices = []vector.Vec3{
+		{X: 0.3, Y: -0.5, Z: 0.0},
+		{X: 0.2, Y: 0.5, Z: 0.0},
+		{X: 0.1, Y: -0.5, Z: 0.0},
+	}
 
 	tri2.Indicies = []uint32{0, 1, 2}
-	tri2.Transform = transform.MakeTransform()
-	tri2.TransformedVertices = tri2.Vertices
+	tri2.Transform = transform.DEFAULT
+	tri2.TransformedVertices = mesh.GetTransformedIndicies(&tri2)
 
 	vertexShader := gl.CreateShader(gl.VERTEX_SHADER)
 	vertexShaderSourceRef, free := gl.Strs(shaders.VERTEX_SHADER_SRC)
@@ -104,18 +109,18 @@ func main() {
 
 	gl.BindVertexArray(VAO1)
 	gl.BindBuffer(gl.ARRAY_BUFFER, VBO1)
-	gl.BufferData(gl.ARRAY_BUFFER, len(tri1.Vertices)*4, gl.Ptr(mesh.GetTransformedIndicies(&tri1)), gl.STATIC_DRAW)
+	gl.BufferData(gl.ARRAY_BUFFER, len(tri1.Vertices)*12, gl.Ptr(tri1.TransformedVertices), gl.STATIC_DRAW)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO1)
-	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(tri1.Indicies)*4, gl.Ptr(tri1.Indicies), gl.STATIC_DRAW)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(tri1.Indicies)*12, gl.Ptr(tri1.Indicies), gl.STATIC_DRAW)
 
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
 	gl.EnableVertexAttribArray(0)
 
 	gl.BindVertexArray(VAO2)
 	gl.BindBuffer(gl.ARRAY_BUFFER, VBO2)
-	gl.BufferData(gl.ARRAY_BUFFER, len(tri2.Vertices)*4, gl.Ptr(tri2.Vertices), gl.STATIC_DRAW)
+	gl.BufferData(gl.ARRAY_BUFFER, len(tri2.Vertices)*12, gl.Ptr(tri2.TransformedVertices), gl.STATIC_DRAW)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO2)
-	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(tri2.Indicies)*4, gl.Ptr(tri2.Indicies), gl.STATIC_DRAW)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(tri2.Indicies)*12, gl.Ptr(tri2.Indicies), gl.STATIC_DRAW)
 
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
 	gl.EnableVertexAttribArray(0)
@@ -136,7 +141,7 @@ func main() {
 
 		if input.V.Pressed {
 			mousePosx, mousePosy = window.GetCursorPos()
-			var clickPos transform.Position
+			var clickPos vector.Vec3
 			clickPos.X = 2*float32(mousePosx/float64(WINDOWWIDTH)) - 1
 			clickPos.Y = -2*float32(mousePosy/float64(WINDOWHEIGHT)) + 1
 			clickPos.Z = 1
@@ -145,19 +150,22 @@ func main() {
 			fmt.Println("Transform is {", tri1.Transform.Position.X, ", ", tri1.Transform.Position.Y, "}")
 		}
 
-		gl.BindBuffer(gl.ARRAY_BUFFER, VBO1)
-		gl.BufferData(gl.ARRAY_BUFFER, len(tri1.Vertices)*4, gl.Ptr(mesh.GetTransformedIndicies(&tri1)), gl.STATIC_DRAW)
-		gl.BindBuffer(gl.ARRAY_BUFFER, VBO2)
-		gl.BufferData(gl.ARRAY_BUFFER, len(tri2.Vertices)*4, gl.Ptr(mesh.GetTransformedIndicies(&tri2)), gl.STATIC_DRAW)
-
-		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
-		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-
 		if shadingModel.Model == shading.WIREFRAME {
 			gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
 		} else {
 			gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
 		}
+
+		mesh.GetTransformedIndicies(&tri1)
+		mesh.GetTransformedIndicies(&tri2)
+
+		gl.BindBuffer(gl.ARRAY_BUFFER, VBO1)
+		gl.BufferData(gl.ARRAY_BUFFER, len(tri1.Vertices)*12, gl.Ptr(tri1.TransformedVertices), gl.STATIC_DRAW)
+		gl.BindBuffer(gl.ARRAY_BUFFER, VBO2)
+		gl.BufferData(gl.ARRAY_BUFFER, len(tri2.Vertices)*12, gl.Ptr(tri2.TransformedVertices), gl.STATIC_DRAW)
+
+		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
+		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		gl.UseProgram(shaderProgram)
 
