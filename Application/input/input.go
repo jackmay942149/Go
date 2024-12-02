@@ -18,15 +18,24 @@ var ESC Key
 var KEY1 Key
 var KEY2 Key
 var K Key
+var W Key
+var A Key
+var S Key
+var D Key
+var V Key
 
 func AttachWindow(window glfw.Window) {
 	WINDOW = window
 
-	ESC = key(glfw.KeyEscape)
-	KEY1 = key(glfw.Key1)
-	KEY2 = key(glfw.Key2)
-	K = key(glfw.KeyK)
-
+	ESC.Code = glfw.KeyEscape
+	KEY1.Code = glfw.Key1
+	KEY2.Code = glfw.Key2
+	K.Code = glfw.KeyK
+	W.Code = glfw.KeyW
+	A.Code = glfw.KeyA
+	S.Code = glfw.KeyS
+	D.Code = glfw.KeyD
+	V.Code = glfw.KeyV
 }
 
 func Refresh() {
@@ -34,22 +43,16 @@ func Refresh() {
 	RefreshKey(&KEY1)
 	RefreshKey(&KEY2)
 	RefreshKey(&K)
+	RefreshKey(&W)
+	RefreshKey(&A)
+	RefreshKey(&S)
+	RefreshKey(&D)
+	RefreshKey(&V)
 }
 
 func RefreshKey(k *Key) {
-	if WINDOW.GetKey(k.Code) == glfw.Press {
-		UpdateKey(k, true)
-	} else {
-		UpdateKey(k, false)
-	}
+	UpdateKey(k, WINDOW.GetKey(k.Code) == glfw.Press)
 }
-
-// Update key should
-/* 	Trigger Pressed Once
-Trigger Held Always
-Trigger Resleased Once
-5 moments (No Press, First Press, Hold, Release, No Press)
-*/
 
 func UpdateKey(k *Key, b bool) {
 	if !b {
@@ -70,13 +73,4 @@ func UpdateKey(k *Key, b bool) {
 		}
 		k.Released = false
 	}
-}
-
-func key(glfwKey glfw.Key) Key {
-	var k Key
-	k.Code = glfwKey
-	k.Pressed = false
-	k.Held = false
-	k.Released = false
-	return k
 }
