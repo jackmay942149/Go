@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"reflect"
 	"runtime"
 
 	"Application/input"
 	"Application/mesh"
+	"Application/scene"
 	"Application/shaders"
 	"Application/shading"
-	"Application/transform"
 	"Application/vector"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -20,6 +21,7 @@ const (
 	WINDOWHEIGHT int32 = 600
 )
 
+var currentscene scene.Scene
 var shadingModel shading.Model = shading.MakeModel(0)
 var mousePosx float64
 var mousePosy float64
@@ -50,28 +52,7 @@ func main() {
 		panic(err)
 	}
 
-	var tri1 mesh.Mesh
-	tri1.Vertices = []vector.Vec3{
-		{X: -0.03, Y: -0.05, Z: 0.0},
-		{X: 0.0, Y: 0.05, Z: 0.0},
-		{X: 0.03, Y: -0.05, Z: 0.0},
-	}
-
-	tri1.Indicies = []uint32{0, 1, 2}
-	tri1.Transform = transform.DEFAULT
-	tri1.TransformedVertices = mesh.GetTransformedIndicies(&tri1)
-
-	var tri2 mesh.Mesh
-
-	tri2.Vertices = []vector.Vec3{
-		{X: 0.3, Y: -0.5, Z: 0.0},
-		{X: 0.2, Y: 0.5, Z: 0.0},
-		{X: 0.1, Y: -0.5, Z: 0.0},
-	}
-
-	tri2.Indicies = []uint32{0, 1, 2}
-	tri2.Transform = transform.DEFAULT
-	tri2.TransformedVertices = mesh.GetTransformedIndicies(&tri2)
+	currentscene = scene.DEFAULT
 
 	vertexShader := gl.CreateShader(gl.VERTEX_SHADER)
 	vertexShaderSourceRef, free := gl.Strs(shaders.VERTEX_SHADER_SRC)
@@ -91,43 +72,80 @@ func main() {
 	gl.AttachShader(shaderProgram, fragShader)
 	gl.LinkProgram(shaderProgram)
 
-	var VBO1 uint32
-	var VAO1 uint32
-	var EBO1 uint32
+	var VAO []uint32 = make([]uint32, len(currentscene.Entities))
+	var VBO []uint32 = make([]uint32, len(currentscene.Entities))
+	var EBO []uint32 = make([]uint32, len(currentscene.Entities))
 
-	var VBO2 uint32
-	var VAO2 uint32
-	var EBO2 uint32
+	/*
 
-	gl.GenVertexArrays(1, &VAO1)
-	gl.GenBuffers(1, &VBO1)
-	gl.GenBuffers(1, &EBO1)
+		var VBO1 uint32
+		var VAO1 uint32
+		var EBO1 uint32
 
-	gl.GenVertexArrays(1, &VAO2)
-	gl.GenBuffers(1, &VBO2)
-	gl.GenBuffers(1, &EBO2)
+		var VBO2 uint32
+		var VAO2 uint32
+		var EBO2 uint32
 
-	gl.BindVertexArray(VAO1)
-	gl.BindBuffer(gl.ARRAY_BUFFER, VBO1)
-	gl.BufferData(gl.ARRAY_BUFFER, len(tri1.Vertices)*12, gl.Ptr(tri1.TransformedVertices), gl.STATIC_DRAW)
-	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO1)
-	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(tri1.Indicies)*12, gl.Ptr(tri1.Indicies), gl.STATIC_DRAW)
+	*/
 
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
-	gl.EnableVertexAttribArray(0)
+	for i := range VAO {
+		gl.GenVertexArrays(1, &VAO[i])
+		gl.GenBuffers(1, &VBO[i])
+		gl.GenBuffers(1, &EBO[i])
+	}
 
-	gl.BindVertexArray(VAO2)
-	gl.BindBuffer(gl.ARRAY_BUFFER, VBO2)
-	gl.BufferData(gl.ARRAY_BUFFER, len(tri2.Vertices)*12, gl.Ptr(tri2.TransformedVertices), gl.STATIC_DRAW)
-	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO2)
-	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(tri2.Indicies)*12, gl.Ptr(tri2.Indicies), gl.STATIC_DRAW)
+	/*
 
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
-	gl.EnableVertexAttribArray(0)
+		gl.GenVertexArrays(1, &VAO1)
+		gl.GenBuffers(1, &VBO1)
+		gl.GenBuffers(1, &EBO1)
+
+		gl.GenVertexArrays(1, &VAO2)
+		gl.GenBuffers(1, &VBO2)
+		gl.GenBuffers(1, &EBO2)
+
+	*/
+
+	for i := range VAO {
+		var meshToDraw mesh.Mesh = reflect.ValueOf(currentscene.Entities[i].Components[0]).Interface().(mesh.Mesh)
+		gl.BindVertexArray(VAO[i])
+		gl.BindBuffer(gl.ARRAY_BUFFER, VBO[i])
+		gl.BufferData(gl.ARRAY_BUFFER, len(meshToDraw.Vertices)*12, gl.Ptr(meshToDraw.TransformedVertices), gl.STATIC_DRAW)
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO[i])
+		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(meshToDraw.Indicies)*12, gl.Ptr(meshToDraw.Indicies), gl.STATIC_DRAW)
+
+		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
+		gl.EnableVertexAttribArray(0)
+	}
+
+	/*
+
+		gl.BindVertexArray(VAO1)
+		gl.BindBuffer(gl.ARRAY_BUFFER, VBO1)
+		gl.BufferData(gl.ARRAY_BUFFER, len(tri1.Vertices)*12, gl.Ptr(tri1.TransformedVertices), gl.STATIC_DRAW)
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO1)
+		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(tri1.Indicies)*12, gl.Ptr(tri1.Indicies), gl.STATIC_DRAW)
+
+		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
+		gl.EnableVertexAttribArray(0)
+
+		gl.BindVertexArray(VAO2)
+		gl.BindBuffer(gl.ARRAY_BUFFER, VBO2)
+		gl.BufferData(gl.ARRAY_BUFFER, len(tri2.Vertices)*12, gl.Ptr(tri2.TransformedVertices), gl.STATIC_DRAW)
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO2)
+		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(tri2.Indicies)*12, gl.Ptr(tri2.Indicies), gl.STATIC_DRAW)
+
+		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
+		gl.EnableVertexAttribArray(0)
+
+	*/
 
 	for !window.ShouldClose() {
 		// Close window on escape press
 		ProcessInput(*window)
+
+		var tri1 mesh.Mesh = reflect.ValueOf(currentscene.Entities[0].Components[0]).Interface().(mesh.Mesh)
+		var tri2 mesh.Mesh = reflect.ValueOf(currentscene.Entities[1].Components[0]).Interface().(mesh.Mesh)
 
 		if input.D.Held {
 			tri2.Transform.Position.X += 0.001
@@ -156,24 +174,42 @@ func main() {
 			gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
 		}
 
-		mesh.GetTransformedIndicies(&tri1)
-		mesh.GetTransformedIndicies(&tri2)
+		mesh.TransformVertices(&tri1)
+		mesh.TransformVertices(&tri2)
 
-		gl.BindBuffer(gl.ARRAY_BUFFER, VBO1)
-		gl.BufferData(gl.ARRAY_BUFFER, len(tri1.Vertices)*12, gl.Ptr(tri1.TransformedVertices), gl.STATIC_DRAW)
-		gl.BindBuffer(gl.ARRAY_BUFFER, VBO2)
-		gl.BufferData(gl.ARRAY_BUFFER, len(tri2.Vertices)*12, gl.Ptr(tri2.TransformedVertices), gl.STATIC_DRAW)
+		for i := range VAO {
+			var meshToDraw mesh.Mesh = reflect.ValueOf(currentscene.Entities[i].Components[0]).Interface().(mesh.Mesh)
+			gl.BindBuffer(gl.ARRAY_BUFFER, VBO[i])
+			gl.BufferData(gl.ARRAY_BUFFER, len(meshToDraw.Vertices)*12, gl.Ptr(meshToDraw.TransformedVertices), gl.STATIC_DRAW)
+		}
+
+		/*
+
+			gl.BindBuffer(gl.ARRAY_BUFFER, VBO1)
+			gl.BufferData(gl.ARRAY_BUFFER, len(tri1.Vertices)*12, gl.Ptr(tri1.TransformedVertices), gl.STATIC_DRAW)
+			gl.BindBuffer(gl.ARRAY_BUFFER, VBO2)
+			gl.BufferData(gl.ARRAY_BUFFER, len(tri2.Vertices)*12, gl.Ptr(tri2.TransformedVertices), gl.STATIC_DRAW)
+
+		*/
 
 		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		gl.UseProgram(shaderProgram)
 
-		gl.BindVertexArray(VAO1)
-		gl.DrawElements(gl.TRIANGLES, int32(len(tri1.Indicies)), gl.UNSIGNED_INT, nil)
+		for i := range VAO {
+			var meshToDraw mesh.Mesh = reflect.ValueOf(currentscene.Entities[i].Components[0]).Interface().(mesh.Mesh)
+			gl.BindVertexArray(VAO[i])
+			gl.DrawElements(gl.TRIANGLES, int32(len(meshToDraw.Indicies)), gl.UNSIGNED_INT, nil)
+		}
+		/*
 
-		gl.BindVertexArray(VAO2)
-		gl.DrawElements(gl.TRIANGLES, int32(len(tri2.Indicies)), gl.UNSIGNED_INT, nil)
+			gl.BindVertexArray(VAO1)
+			gl.DrawElements(gl.TRIANGLES, int32(len(tri1.Indicies)), gl.UNSIGNED_INT, nil)
+
+			gl.BindVertexArray(VAO2)
+			gl.DrawElements(gl.TRIANGLES, int32(len(tri2.Indicies)), gl.UNSIGNED_INT, nil)
+		*/
 
 		// Do OpenGL stuff.
 		window.SwapBuffers()
