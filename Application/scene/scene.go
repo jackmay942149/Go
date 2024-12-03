@@ -15,10 +15,10 @@ var DEFAULT Scene = Scene{Entities: []entity.Entity{DEFAULT_GIZMO, DEFAULT_TRIAN
 
 var DEFAULT_GIZMO entity.Entity = entity.Entity{
 	Transform:  transform.DEFAULT,
-	Components: []component.Component{mesh.DEFAULT_GIZMO},
+	Components: []component.Component{&mesh.DEFAULT_GIZMO},
 }
 
 var DEFAULT_TRIANGLE entity.Entity = entity.Entity{
 	Transform:  transform.DEFAULT,
-	Components: []component.Component{mesh.DEFAULT_TRIANGLE},
+	Components: []component.Component{&mesh.DEFAULT_TRIANGLE},
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"reflect"
 	"runtime"
 
 	"Application/input"
@@ -107,7 +106,7 @@ func main() {
 	*/
 
 	for i := range VAO {
-		var meshToDraw mesh.Mesh = reflect.ValueOf(currentscene.Entities[i].Components[0]).Interface().(mesh.Mesh)
+		meshToDraw := currentscene.Entities[i].Components[0].(*mesh.Mesh)
 		gl.BindVertexArray(VAO[i])
 		gl.BindBuffer(gl.ARRAY_BUFFER, VBO[i])
 		gl.BufferData(gl.ARRAY_BUFFER, len(meshToDraw.Vertices)*12, gl.Ptr(meshToDraw.TransformedVertices), gl.STATIC_DRAW)
@@ -144,8 +143,9 @@ func main() {
 		// Close window on escape press
 		ProcessInput(*window)
 
-		var tri1 mesh.Mesh = reflect.ValueOf(currentscene.Entities[0].Components[0]).Interface().(mesh.Mesh)
-		var tri2 mesh.Mesh = reflect.ValueOf(currentscene.Entities[1].Components[0]).Interface().(mesh.Mesh)
+		tri1 := currentscene.Entities[0].Components[0].(*mesh.Mesh)
+		//var tri2 mesh.Mesh = reflect.ValueOf(currentscene.Entities[1].Components[0]).Interface().(mesh.Mesh)
+		tri2, _ := currentscene.Entities[1].Components[0].(*mesh.Mesh)
 
 		if input.D.Held {
 			tri2.Transform.Position.X += 0.001
@@ -164,7 +164,7 @@ func main() {
 			clickPos.Y = -2*float32(mousePosy/float64(WINDOWHEIGHT)) + 1
 			clickPos.Z = 1
 			fmt.Println("ClickPos = ", clickPos)
-			tri1.Transform.Position = mesh.GetClosestVertex(tri2, clickPos)
+			tri1.Transform.Position = mesh.GetClosestVertex(*tri2, clickPos)
 			fmt.Println("Transform is {", tri1.Transform.Position.X, ", ", tri1.Transform.Position.Y, "}")
 		}
 
@@ -174,11 +174,11 @@ func main() {
 			gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
 		}
 
-		mesh.TransformVertices(&tri1)
-		mesh.TransformVertices(&tri2)
+		mesh.TransformVertices(tri1)
+		mesh.TransformVertices(tri2)
 
 		for i := range VAO {
-			var meshToDraw mesh.Mesh = reflect.ValueOf(currentscene.Entities[i].Components[0]).Interface().(mesh.Mesh)
+			meshToDraw := currentscene.Entities[i].Components[0].(*mesh.Mesh)
 			gl.BindBuffer(gl.ARRAY_BUFFER, VBO[i])
 			gl.BufferData(gl.ARRAY_BUFFER, len(meshToDraw.Vertices)*12, gl.Ptr(meshToDraw.TransformedVertices), gl.STATIC_DRAW)
 		}
@@ -198,7 +198,7 @@ func main() {
 		gl.UseProgram(shaderProgram)
 
 		for i := range VAO {
-			var meshToDraw mesh.Mesh = reflect.ValueOf(currentscene.Entities[i].Components[0]).Interface().(mesh.Mesh)
+			meshToDraw := currentscene.Entities[0].Components[0].(*mesh.Mesh)
 			gl.BindVertexArray(VAO[i])
 			gl.DrawElements(gl.TRIANGLES, int32(len(meshToDraw.Indicies)), gl.UNSIGNED_INT, nil)
 		}
