@@ -52,6 +52,8 @@ func main() {
 	}
 
 	currentscene = scene.DEFAULT
+	currentscene.Entities[0].AddComponent(&mesh.DEFAULT_GIZMO)
+	currentscene.Entities[1].AddComponent(&mesh.DEFAULT_TRIANGLE)
 
 	vertexShader := gl.CreateShader(gl.VERTEX_SHADER)
 	vertexShaderSourceRef, free := gl.Strs(shaders.VERTEX_SHADER_SRC)
@@ -106,7 +108,7 @@ func main() {
 	*/
 
 	for i := range VAO {
-		meshToDraw := currentscene.Entities[i].Components[0].(*mesh.Mesh)
+		meshToDraw := currentscene.Entities[i].GetComponent("Mesh").(*mesh.Mesh)
 		gl.BindVertexArray(VAO[i])
 		gl.BindBuffer(gl.ARRAY_BUFFER, VBO[i])
 		gl.BufferData(gl.ARRAY_BUFFER, len(meshToDraw.Vertices)*12, gl.Ptr(meshToDraw.TransformedVertices), gl.STATIC_DRAW)
@@ -143,9 +145,9 @@ func main() {
 		// Close window on escape press
 		ProcessInput(*window)
 
-		tri1 := currentscene.Entities[0].Components[0].(*mesh.Mesh)
+		tri1 := currentscene.Entities[0].GetComponent("Mesh").(*mesh.Mesh)
 		//var tri2 mesh.Mesh = reflect.ValueOf(currentscene.Entities[1].Components[0]).Interface().(mesh.Mesh)
-		tri2, _ := currentscene.Entities[1].Components[0].(*mesh.Mesh)
+		tri2 := currentscene.Entities[1].GetComponent("Mesh").(*mesh.Mesh)
 
 		if input.D.Held {
 			tri2.Transform.Position.X += 0.001
@@ -178,7 +180,7 @@ func main() {
 		mesh.TransformVertices(tri2)
 
 		for i := range VAO {
-			meshToDraw := currentscene.Entities[i].Components[0].(*mesh.Mesh)
+			meshToDraw := currentscene.Entities[i].GetComponent("Mesh").(*mesh.Mesh)
 			gl.BindBuffer(gl.ARRAY_BUFFER, VBO[i])
 			gl.BufferData(gl.ARRAY_BUFFER, len(meshToDraw.Vertices)*12, gl.Ptr(meshToDraw.TransformedVertices), gl.STATIC_DRAW)
 		}
@@ -198,7 +200,7 @@ func main() {
 		gl.UseProgram(shaderProgram)
 
 		for i := range VAO {
-			meshToDraw := currentscene.Entities[0].Components[0].(*mesh.Mesh)
+			meshToDraw := currentscene.Entities[i].GetComponent("Mesh").(*mesh.Mesh)
 			gl.BindVertexArray(VAO[i])
 			gl.DrawElements(gl.TRIANGLES, int32(len(meshToDraw.Indicies)), gl.UNSIGNED_INT, nil)
 		}

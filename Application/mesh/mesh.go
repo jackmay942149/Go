@@ -64,6 +64,6 @@ func GetClosestVertex(m Mesh, p vector.Vec3) (closestVertex vector.Vec3) {
 	return
 }
 
-func Get(m Mesh) Mesh {
-	return m
+func (m *Mesh) Name() string {
+	return "Mesh"
 }
