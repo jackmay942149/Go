@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"runtime"
 
+	"Application/components/wasdmove"
 	"Application/input"
 	"Application/mesh"
 	"Application/scene"
 	"Application/shaders"
 	"Application/shading"
+	"Application/transform"
 	"Application/vector"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -52,8 +54,44 @@ func main() {
 	}
 
 	currentscene = scene.DEFAULT
-	currentscene.Entities[0].AddComponent(&mesh.DEFAULT_GIZMO)
-	currentscene.Entities[1].AddComponent(&mesh.DEFAULT_TRIANGLE)
+	currentscene.Entities[0].AddComponent(&transform.DEFAULT)
+	currentscene.Entities[1].AddComponent(&transform.DEFAULT)
+
+	meshGizmo := mesh.Mesh{
+		Entity:    &currentscene.Entities[0],
+		Transform: nil,
+		Vertices: []vector.Vec3{
+			{X: -0.03, Y: -0.05, Z: 0.0},
+			{X: 0.0, Y: 0.05, Z: 0.0},
+			{X: 0.03, Y: -0.05, Z: 0.0},
+		},
+		Indicies: []uint32{0, 1, 2},
+		TransformedVertices: []vector.Vec3{
+			{X: -0.03, Y: -0.05, Z: 0.0},
+			{X: 0.0, Y: 0.05, Z: 0.0},
+			{X: 0.03, Y: -0.05, Z: 0.0},
+		},
+	}
+	meshTriangle := mesh.Mesh{
+		Entity:    &currentscene.Entities[1],
+		Transform: nil,
+		Vertices: []vector.Vec3{
+			{X: -0.3, Y: -0.5, Z: 0.0},
+			{X: 0.0, Y: 0.5, Z: 0.0},
+			{X: 0.3, Y: -0.5, Z: 0.0},
+		},
+		Indicies: []uint32{0, 1, 2},
+		TransformedVertices: []vector.Vec3{
+			{X: -0.3, Y: -0.5, Z: 0.0},
+			{X: 0.0, Y: 0.5, Z: 0.0},
+			{X: 0.3, Y: -0.5, Z: 0.0},
+		},
+	}
+	currentscene.Entities[0].AddComponent(&meshGizmo)
+	currentscene.Entities[1].AddComponent(&meshTriangle)
+
+	movement := wasdmove.Wasdmove{Entity: &currentscene.Entities[0]}
+	currentscene.Entities[0].AddComponent(&movement)
 
 	vertexShader := gl.CreateShader(gl.VERTEX_SHADER)
 	vertexShaderSourceRef, free := gl.Strs(shaders.VERTEX_SHADER_SRC)
@@ -77,88 +115,54 @@ func main() {
 	var VBO []uint32 = make([]uint32, len(currentscene.Entities))
 	var EBO []uint32 = make([]uint32, len(currentscene.Entities))
 
-	/*
-
-		var VBO1 uint32
-		var VAO1 uint32
-		var EBO1 uint32
-
-		var VBO2 uint32
-		var VAO2 uint32
-		var EBO2 uint32
-
-	*/
-
 	for i := range VAO {
 		gl.GenVertexArrays(1, &VAO[i])
 		gl.GenBuffers(1, &VBO[i])
 		gl.GenBuffers(1, &EBO[i])
 	}
 
-	/*
-
-		gl.GenVertexArrays(1, &VAO1)
-		gl.GenBuffers(1, &VBO1)
-		gl.GenBuffers(1, &EBO1)
-
-		gl.GenVertexArrays(1, &VAO2)
-		gl.GenBuffers(1, &VBO2)
-		gl.GenBuffers(1, &EBO2)
-
-	*/
-
 	for i := range VAO {
 		meshToDraw := currentscene.Entities[i].GetComponent("Mesh").(*mesh.Mesh)
 		gl.BindVertexArray(VAO[i])
 		gl.BindBuffer(gl.ARRAY_BUFFER, VBO[i])
-		gl.BufferData(gl.ARRAY_BUFFER, len(meshToDraw.Vertices)*12, gl.Ptr(meshToDraw.TransformedVertices), gl.STATIC_DRAW)
+		gl.BufferData(gl.ARRAY_BUFFER, len(meshToDraw.Vertices)*12, gl.Ptr(meshToDraw.TransformedVertices), gl.DYNAMIC_DRAW)
 		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO[i])
-		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(meshToDraw.Indicies)*12, gl.Ptr(meshToDraw.Indicies), gl.STATIC_DRAW)
+		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(meshToDraw.Indicies)*12, gl.Ptr(meshToDraw.Indicies), gl.DYNAMIC_DRAW)
 
 		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
 		gl.EnableVertexAttribArray(0)
 	}
 
-	/*
-
-		gl.BindVertexArray(VAO1)
-		gl.BindBuffer(gl.ARRAY_BUFFER, VBO1)
-		gl.BufferData(gl.ARRAY_BUFFER, len(tri1.Vertices)*12, gl.Ptr(tri1.TransformedVertices), gl.STATIC_DRAW)
-		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO1)
-		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(tri1.Indicies)*12, gl.Ptr(tri1.Indicies), gl.STATIC_DRAW)
-
-		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
-		gl.EnableVertexAttribArray(0)
-
-		gl.BindVertexArray(VAO2)
-		gl.BindBuffer(gl.ARRAY_BUFFER, VBO2)
-		gl.BufferData(gl.ARRAY_BUFFER, len(tri2.Vertices)*12, gl.Ptr(tri2.TransformedVertices), gl.STATIC_DRAW)
-		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO2)
-		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(tri2.Indicies)*12, gl.Ptr(tri2.Indicies), gl.STATIC_DRAW)
-
-		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
-		gl.EnableVertexAttribArray(0)
-
-	*/
+	for _, e := range currentscene.Entities {
+		for _, c := range e.Components {
+			c.Start()
+		}
+	}
 
 	for !window.ShouldClose() {
 		// Close window on escape press
 		ProcessInput(*window)
 
 		tri1 := currentscene.Entities[0].GetComponent("Mesh").(*mesh.Mesh)
-		//var tri2 mesh.Mesh = reflect.ValueOf(currentscene.Entities[1].Components[0]).Interface().(mesh.Mesh)
 		tri2 := currentscene.Entities[1].GetComponent("Mesh").(*mesh.Mesh)
 
-		if input.D.Held {
-			tri2.Transform.Position.X += 0.001
-		} else if input.A.Held {
-			tri2.Transform.Position.X -= 0.001
-		} else if input.W.Held {
-			tri2.Transform.Position.Y += 0.001
-		} else if input.S.Held {
-			tri2.Transform.Position.Y -= 0.001
-		}
+		/*
+			if input.D.Held {
+				tri2.Transform.Position.X += 0.001
+			} else if input.A.Held {
+				tri2.Transform.Position.X -= 0.001
+			} else if input.W.Held {
+				tri2.Transform.Position.Y += 0.001
+			} else if input.S.Held {
+				tri2.Transform.Position.Y -= 0.001
+			}
+		*/
 
+		for _, e := range currentscene.Entities {
+			for _, c := range e.Components {
+				c.Update()
+			}
+		}
 		if input.V.Pressed {
 			mousePosx, mousePosy = window.GetCursorPos()
 			var clickPos vector.Vec3
@@ -185,15 +189,6 @@ func main() {
 			gl.BufferData(gl.ARRAY_BUFFER, len(meshToDraw.Vertices)*12, gl.Ptr(meshToDraw.TransformedVertices), gl.STATIC_DRAW)
 		}
 
-		/*
-
-			gl.BindBuffer(gl.ARRAY_BUFFER, VBO1)
-			gl.BufferData(gl.ARRAY_BUFFER, len(tri1.Vertices)*12, gl.Ptr(tri1.TransformedVertices), gl.STATIC_DRAW)
-			gl.BindBuffer(gl.ARRAY_BUFFER, VBO2)
-			gl.BufferData(gl.ARRAY_BUFFER, len(tri2.Vertices)*12, gl.Ptr(tri2.TransformedVertices), gl.STATIC_DRAW)
-
-		*/
-
 		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
@@ -204,14 +199,6 @@ func main() {
 			gl.BindVertexArray(VAO[i])
 			gl.DrawElements(gl.TRIANGLES, int32(len(meshToDraw.Indicies)), gl.UNSIGNED_INT, nil)
 		}
-		/*
-
-			gl.BindVertexArray(VAO1)
-			gl.DrawElements(gl.TRIANGLES, int32(len(tri1.Indicies)), gl.UNSIGNED_INT, nil)
-
-			gl.BindVertexArray(VAO2)
-			gl.DrawElements(gl.TRIANGLES, int32(len(tri2.Indicies)), gl.UNSIGNED_INT, nil)
-		*/
 
 		// Do OpenGL stuff.
 		window.SwapBuffers()

@@ -3,7 +3,6 @@ package scene
 import (
 	"Application/component"
 	"Application/entity"
-	"Application/transform"
 )
 
 type Scene struct {
@@ -13,11 +12,9 @@ type Scene struct {
 var DEFAULT Scene = Scene{Entities: []entity.Entity{DEFAULT_GIZMO, DEFAULT_TRIANGLE}}
 
 var DEFAULT_GIZMO entity.Entity = entity.Entity{
-	Transform:  transform.DEFAULT,
 	Components: make(map[string]component.Component),
 }
 
 var DEFAULT_TRIANGLE entity.Entity = entity.Entity{
-	Transform:  transform.DEFAULT,
 	Components: make(map[string]component.Component),
 }
