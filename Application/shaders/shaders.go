@@ -21,7 +21,7 @@ void main()
 	FragColor = ourColor;
 }`
 
-func MakeShaderProgram(vertFilepath string, fragFilepath string) uint32 {
+func MakeShaderProgram() uint32 {
 	// Make Vertex Shader
 	vertexShader := gl.CreateShader(gl.VERTEX_SHADER)
 	vecSrc := VERTEX_SHADER_SRC
