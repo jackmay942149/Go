@@ -23,7 +23,6 @@ const (
 	WINDOWHEIGHT int32 = 600
 )
 
-var window *glfw.Window
 var currentscene scene.Scene
 var shadingModel shading.Model = shading.Model{Model: shading.UNLIT}
 var mousePosx float64
@@ -95,7 +94,9 @@ func main() {
 	currentscene.Entities[1].AddComponent(&meshTriangle)
 
 	movement := wasdmove.Wasdmove{Entity: &currentscene.Entities[0]}
+	movement2 := wasdmove.Wasdmove{Entity: &currentscene.Entities[1]}
 	currentscene.Entities[0].AddComponent(&movement)
+	currentscene.Entities[1].AddComponent(&movement2)
 
 	shaderProgram := shaders.MakeShaderProgram()
 
@@ -135,32 +136,21 @@ func main() {
 		// Close window on escape press
 		ProcessInput(*window)
 
-		tri1 := currentscene.Entities[0].GetComponent("Mesh").(*mesh.Mesh)
-		tri2 := currentscene.Entities[1].GetComponent("Mesh").(*mesh.Mesh)
-
 		timeValue := glfw.GetTime()
 		greenValue := float32((math.Sin(timeValue) / 2.0) + 0.5)
 		vertexColorLocation := gl.GetUniformLocation(shaderProgram, gl.Str("ourColor\x00"))
 		gl.UseProgram(shaderProgram)
 		gl.Uniform4f(vertexColorLocation, 0.0, greenValue, 0.0, 1.0)
 
-		/*
-			if input.D.Held {
-				tri2.Transform.Position.X += 0.001
-			} else if input.A.Held {
-				tri2.Transform.Position.X -= 0.001
-			} else if input.W.Held {
-				tri2.Transform.Position.Y += 0.001
-			} else if input.S.Held {
-				tri2.Transform.Position.Y -= 0.001
-			}
-		*/
-
 		for _, e := range currentscene.Entities {
 			for _, c := range e.Components {
 				c.Update()
 			}
 		}
+
+		tri1 := currentscene.Entities[0].GetComponent("Mesh").(*mesh.Mesh)
+		tri2 := currentscene.Entities[1].GetComponent("Mesh").(*mesh.Mesh)
+
 		if input.V.Pressed {
 			mousePosx, mousePosy = window.GetCursorPos()
 			var clickPos vector.Vec3
@@ -181,12 +171,6 @@ func main() {
 		mesh.TransformVertices(tri1)
 		mesh.TransformVertices(tri2)
 
-		for i := range VAO {
-			meshToDraw := currentscene.Entities[i].GetComponent("Mesh").(*mesh.Mesh)
-			gl.BindBuffer(gl.ARRAY_BUFFER, VBO[i])
-			gl.BufferData(gl.ARRAY_BUFFER, len(meshToDraw.Vertices)*12, gl.Ptr(meshToDraw.TransformedVertices), gl.STATIC_DRAW)
-		}
-
 		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
@@ -195,7 +179,9 @@ func main() {
 		for i := range VAO {
 			meshToDraw := currentscene.Entities[i].GetComponent("Mesh").(*mesh.Mesh)
 			gl.BindVertexArray(VAO[i])
+			gl.BindBuffer(gl.ARRAY_BUFFER, VBO[i])
 			gl.DrawElements(gl.TRIANGLES, int32(len(meshToDraw.Indicies)), gl.UNSIGNED_INT, nil)
+
 		}
 
 		// Do OpenGL stuff.
