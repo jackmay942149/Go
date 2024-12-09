@@ -97,67 +97,7 @@ func main() {
 	movement := wasdmove.Wasdmove{Entity: &currentscene.Entities[0]}
 	currentscene.Entities[0].AddComponent(&movement)
 
-	// Make Vertex Shader
-	vertexShader := gl.CreateShader(gl.VERTEX_SHADER)
-	vecSrc := shaders.VERTEX_SHADER_SRC
-	vertexShaderSourceRef, free := gl.Strs(vecSrc)
-	vecLen := int32(len(shaders.VERTEX_SHADER_SRC))
-	gl.ShaderSource(vertexShader, 1, vertexShaderSourceRef, &vecLen)
-	gl.CompileShader(vertexShader)
-	free()
-
-	// Test Vertex Shader
-	var vertexSuccess int32
-	gl.GetShaderiv(vertexShader, gl.COMPILE_STATUS, &vertexSuccess)
-	if vertexSuccess == 0 {
-		error := make([]uint8, 512)
-		var length int32
-		gl.GetShaderInfoLog(vertexShader, 512, &length, &error[0])
-		fmt.Println("ERROR::SHADER::VERTEX::COMPILATION_FAILED", string(error[:length]))
-		fmt.Println(shaders.VERTEX_SHADER_SRC)
-		return
-	}
-
-	// Make Fragment Shader
-	fragShader := gl.CreateShader(gl.FRAGMENT_SHADER)
-	fragShaderSourceRef, free := gl.Strs(shaders.FRAGMENT_SHADER_SRC)
-	fragLen := int32(len(shaders.FRAGMENT_SHADER_SRC))
-	gl.ShaderSource(fragShader, 1, fragShaderSourceRef, &fragLen)
-	gl.CompileShader(fragShader)
-	free()
-
-	// Test Fragment Shader
-	var fragSuccess int32
-	gl.GetShaderiv(fragShader, gl.COMPILE_STATUS, &fragSuccess)
-	if fragSuccess == 0 {
-		error := make([]uint8, 512)
-		var length int32
-		gl.GetShaderInfoLog(fragShader, 512, &length, &error[0])
-		fmt.Println("ERROR::SHADER::FRAG::COMPILATION_FAILED", string(error[:length]))
-		fmt.Println(shaders.FRAGMENT_SHADER_SRC)
-		return
-	}
-
-	// Create Shader Program
-	shaderProgram := gl.CreateProgram()
-	gl.AttachShader(shaderProgram, vertexShader)
-	gl.AttachShader(shaderProgram, fragShader)
-	gl.LinkProgram(shaderProgram)
-
-	// Test Program Linking
-	var linkSuccess int32
-	gl.GetProgramiv(shaderProgram, gl.LINK_STATUS, &linkSuccess)
-	if linkSuccess == 0 {
-		error := make([]uint8, 512)
-		var length int32
-		gl.GetProgramInfoLog(shaderProgram, 512, &length, &error[0])
-		fmt.Println("ERROR::SHADER::PROGRAM::LINKING_FAILED", string(error[:length]))
-		return
-	}
-
-	// Cleanup
-	gl.DeleteShader(vertexShader)
-	gl.DeleteShader(fragShader)
+	shaderProgram := shaders.MakeShaderProgram()
 
 	var VAO []uint32 = make([]uint32, len(currentscene.Entities))
 	var VBO []uint32 = make([]uint32, len(currentscene.Entities))
