@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"runtime"
 
 	"Application/components/wasdmove"
@@ -22,8 +23,9 @@ const (
 	WINDOWHEIGHT int32 = 600
 )
 
+var window *glfw.Window
 var currentscene scene.Scene
-var shadingModel shading.Model = shading.MakeModel(0)
+var shadingModel shading.Model = shading.Model{Model: shading.UNLIT}
 var mousePosx float64
 var mousePosy float64
 
@@ -34,6 +36,7 @@ func init() {
 }
 
 func main() {
+	// Start glfw
 	err := glfw.Init()
 	if err != nil {
 		panic(err)
@@ -53,6 +56,7 @@ func main() {
 		panic(err)
 	}
 
+	// Make Scene
 	currentscene = scene.DEFAULT
 	currentscene.Entities[0].AddComponent(&transform.DEFAULT)
 	currentscene.Entities[1].AddComponent(&transform.DEFAULT)
@@ -93,23 +97,67 @@ func main() {
 	movement := wasdmove.Wasdmove{Entity: &currentscene.Entities[0]}
 	currentscene.Entities[0].AddComponent(&movement)
 
+	// Make Vertex Shader
 	vertexShader := gl.CreateShader(gl.VERTEX_SHADER)
-	vertexShaderSourceRef, free := gl.Strs(shaders.VERTEX_SHADER_SRC)
-	gl.ShaderSource(vertexShader, 1, vertexShaderSourceRef, nil)
-	free()
+	vecSrc := shaders.VERTEX_SHADER_SRC
+	vertexShaderSourceRef, free := gl.Strs(vecSrc)
+	vecLen := int32(len(shaders.VERTEX_SHADER_SRC))
+	gl.ShaderSource(vertexShader, 1, vertexShaderSourceRef, &vecLen)
 	gl.CompileShader(vertexShader)
+	free()
 
+	// Test Vertex Shader
+	var vertexSuccess int32
+	gl.GetShaderiv(vertexShader, gl.COMPILE_STATUS, &vertexSuccess)
+	if vertexSuccess == 0 {
+		error := make([]uint8, 512)
+		var length int32
+		gl.GetShaderInfoLog(vertexShader, 512, &length, &error[0])
+		fmt.Println("ERROR::SHADER::VERTEX::COMPILATION_FAILED", string(error[:length]))
+		fmt.Println(shaders.VERTEX_SHADER_SRC)
+		return
+	}
+
+	// Make Fragment Shader
 	fragShader := gl.CreateShader(gl.FRAGMENT_SHADER)
 	fragShaderSourceRef, free := gl.Strs(shaders.FRAGMENT_SHADER_SRC)
-	gl.ShaderSource(fragShader, 1, fragShaderSourceRef, nil)
-	free()
+	fragLen := int32(len(shaders.FRAGMENT_SHADER_SRC))
+	gl.ShaderSource(fragShader, 1, fragShaderSourceRef, &fragLen)
 	gl.CompileShader(fragShader)
+	free()
 
+	// Test Fragment Shader
+	var fragSuccess int32
+	gl.GetShaderiv(fragShader, gl.COMPILE_STATUS, &fragSuccess)
+	if fragSuccess == 0 {
+		error := make([]uint8, 512)
+		var length int32
+		gl.GetShaderInfoLog(fragShader, 512, &length, &error[0])
+		fmt.Println("ERROR::SHADER::FRAG::COMPILATION_FAILED", string(error[:length]))
+		fmt.Println(shaders.FRAGMENT_SHADER_SRC)
+		return
+	}
+
+	// Create Shader Program
 	shaderProgram := gl.CreateProgram()
-
 	gl.AttachShader(shaderProgram, vertexShader)
 	gl.AttachShader(shaderProgram, fragShader)
 	gl.LinkProgram(shaderProgram)
+
+	// Test Program Linking
+	var linkSuccess int32
+	gl.GetProgramiv(shaderProgram, gl.LINK_STATUS, &linkSuccess)
+	if linkSuccess == 0 {
+		error := make([]uint8, 512)
+		var length int32
+		gl.GetProgramInfoLog(shaderProgram, 512, &length, &error[0])
+		fmt.Println("ERROR::SHADER::PROGRAM::LINKING_FAILED", string(error[:length]))
+		return
+	}
+
+	// Cleanup
+	gl.DeleteShader(vertexShader)
+	gl.DeleteShader(fragShader)
 
 	var VAO []uint32 = make([]uint32, len(currentscene.Entities))
 	var VBO []uint32 = make([]uint32, len(currentscene.Entities))
@@ -139,12 +187,22 @@ func main() {
 		}
 	}
 
+	var maxVertexsAbs int32
+	gl.GetIntegerv(gl.MAX_VERTEX_ATTRIBS, &maxVertexsAbs)
+	fmt.Println(maxVertexsAbs)
+
 	for !window.ShouldClose() {
 		// Close window on escape press
 		ProcessInput(*window)
 
 		tri1 := currentscene.Entities[0].GetComponent("Mesh").(*mesh.Mesh)
 		tri2 := currentscene.Entities[1].GetComponent("Mesh").(*mesh.Mesh)
+
+		timeValue := glfw.GetTime()
+		greenValue := float32((math.Sin(timeValue) / 2.0) + 0.5)
+		vertexColorLocation := gl.GetUniformLocation(shaderProgram, gl.Str("ourColor\x00"))
+		gl.UseProgram(shaderProgram)
+		gl.Uniform4f(vertexColorLocation, 0.0, greenValue, 0.0, 1.0)
 
 		/*
 			if input.D.Held {
